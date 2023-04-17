@@ -9,6 +9,7 @@ mod ui;
 use argh::FromArgs;
 use crate::parser::Entity;
 use rand::seq::SliceRandom;
+use crate::SubCommands::Sync;
 
 const VERSION: &str = "0.0.1";
 
@@ -59,17 +60,42 @@ fn main() {
 
     match command {
         SubCommands::Random(_) => {
-            let x: Vec<Entity> = utils::load_tips_from_disk().unwrap();
+            let x: Vec<Entity> = utils::load_tips_from_disk().unwrap_or_else(|_| {
+                let entities = parser::parse().unwrap();
+                utils::save_tips_to_disk(&entities).unwrap();
+                entities
+            });
+
             let mut rng = rand::thread_rng();
             let entity = x.choose(&mut rng).unwrap();
 
-            println!("{}\n\n{}", entity.title, entity.content)
+            bat::PrettyPrinter::new()
+                .input_from_bytes(entity.title.as_bytes())
+                .grid(false)
+                .theme("zenburn")
+                .line_numbers(false)
+                .header(false)
+                .print()
+                .unwrap();
+            println!();
+
+            bat::PrettyPrinter::new()
+                .language("markdown")
+                .input_from_bytes(entity.content.as_bytes())
+                .theme("zenburn")
+                .grid(false)
+                .line_numbers(false)
+                .colored_output(true)
+                .true_color(true)
+                .header(false)
+                .print()
+                .unwrap();
         }
-        SubCommands::Sync(_) => {
+        Sync(_) => {
             log!("Start sync all laravel tips from {} ...", "LaravelDaily/laravel-tips");
 
             let entities = parser::parse().unwrap();
-            utils::save_tips_to_disk(entities).unwrap();
+            utils::save_tips_to_disk(&entities).unwrap();
 
             success!("Sync all laravel tips from {} successfully", "LaravelDaily/laravel-tips");
         }

@@ -21,10 +21,6 @@ pub struct Tree {
 }
 
 impl Tree {
-    fn new(path: String, url: String) -> Self {
-        Self { path, url }
-    }
-
     pub fn is_readme(&self) -> bool {
         self.path.to_uppercase() == "README.md"
     }

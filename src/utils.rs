@@ -46,7 +46,7 @@ fn process_line(mut state: (Option<Tip>, Vec<Tip>), line: &str) -> (Option<Tip>,
     state
 }
 
-pub fn save_tips_to_disk<T: Serialize>(tips: Vec<T>) -> anyhow::Result<()> {
+pub fn save_tips_to_disk<T: Serialize>(tips: &Vec<T>) -> anyhow::Result<()> {
     let json = serde_json::to_string(&tips)?;
     std::fs::write("tips.json", json)?;
     Ok(())

@@ -1,11 +1,9 @@
-# Rust Laravel Tips
-
-Basic design:
+# Laravel Tips
 
 ```
 Usage: laraveltips [-v] [<command>] [<args>]
 
-A sample program
+A command line tool for laravel tips
 
 Options:
   -v, --version     show version
@@ -15,5 +13,3 @@ Commands:
   random            random laravel tips
   sync              sync laravel tips from laravel docs
 ```
-
-TO BE CONTINUED...

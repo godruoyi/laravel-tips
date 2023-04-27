@@ -1,7 +1,8 @@
-use serde::{Deserialize};
 use crate::http::http_get;
+use serde::Deserialize;
 
-const GITHUB_TREES_API: &str = "https://api.github.com/repos/LaravelDaily/laravel-tips/git/trees/master?recursive=1";
+const GITHUB_TREES_API: &str =
+    "https://api.github.com/repos/LaravelDaily/laravel-tips/git/trees/master?recursive=1";
 
 pub fn get_trees() -> anyhow::Result<Vec<Tree>> {
     let res = http_get::<Trees>(GITHUB_TREES_API)?;

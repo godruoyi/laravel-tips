@@ -1,15 +1,15 @@
-mod parser;
-mod http;
 mod github;
+mod http;
+mod parser;
 mod utils;
 
 #[macro_use]
 mod ui;
 
-use argh::FromArgs;
 use crate::parser::Entity;
-use rand::seq::SliceRandom;
 use crate::SubCommands::Sync;
+use argh::FromArgs;
+use rand::seq::SliceRandom;
 
 const VERSION: &str = "0.0.1";
 
@@ -69,6 +69,7 @@ fn main() {
             let mut rng = rand::thread_rng();
             let entity = x.choose(&mut rng).unwrap();
 
+            // @todo refactor and move to ui mod
             bat::PrettyPrinter::new()
                 .input_from_bytes(entity.title.as_bytes())
                 .grid(false)
@@ -78,7 +79,6 @@ fn main() {
                 .print()
                 .unwrap();
             println!();
-
             bat::PrettyPrinter::new()
                 .language("markdown")
                 .input_from_bytes(entity.content.as_bytes())
@@ -92,12 +92,18 @@ fn main() {
                 .unwrap();
         }
         Sync(_) => {
-            log!("Start sync all laravel tips from {} ...", "LaravelDaily/laravel-tips");
+            log!(
+                "Start sync all laravel tips from {} ...",
+                "LaravelDaily/laravel-tips"
+            );
 
             let entities = parser::parse().unwrap();
             utils::save_tips_to_disk(&entities).unwrap();
 
-            success!("Sync all laravel tips from {} successfully", "LaravelDaily/laravel-tips");
+            success!(
+                "Sync all laravel tips from {} successfully",
+                "LaravelDaily/laravel-tips"
+            );
         }
     }
 }

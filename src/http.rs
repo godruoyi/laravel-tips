@@ -1,4 +1,4 @@
-use serde::de::{DeserializeOwned};
+use serde::de::DeserializeOwned;
 
 pub fn http_get<T: DeserializeOwned>(url: &str) -> anyhow::Result<T> {
     let mut headers = reqwest::header::HeaderMap::new();

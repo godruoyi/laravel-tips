@@ -1,4 +1,12 @@
-# Laravel Tips
+# Laravel Tips [![Build Status]][actions]
+
+[Build Status]: https://img.shields.io/github/actions/workflow/status/godruoyi/laravel-tips/ci.yml?branch=main
+
+[actions]: https://github.com/godruoyi/laravel-tips/actions?query=branch%3Amaster
+
+A small command program for laravel tips written in Rust.
+
+## Basic Usage
 
 ```
 Usage: laraveltips [-v] [<command>] [<args>]
@@ -14,4 +22,6 @@ Commands:
   sync              sync laravel tips from laravel docs
 ```
 
-[![asciicast](https://user-images.githubusercontent.com/16079222/232529193-0b4f574e-db44-4c78-a871-1345ae6f1bf8.gif)
+## ScreenShot
+
+![asciicast](https://user-images.githubusercontent.com/16079222/234807147-04ed613f-a3e4-4547-8b9e-e761801a7ca0.gif)

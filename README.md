@@ -1,6 +1,6 @@
 # Laravel Tips [![Build Status]][actions]
 
-[Build Status]: https://img.shields.io/github/actions/workflow/status/godruoyi/laravel-tips/ci.yml?branch=main
+[Build Status]: https://img.shields.io/github/actions/workflow/status/godruoyi/laravel-tips/ci.yml?branch=master
 
 [actions]: https://github.com/godruoyi/laravel-tips/actions?query=branch%3Amaster
 
@@ -24,4 +24,4 @@ Commands:
 
 ## ScreenShot
 
-![asciicast](https://user-images.githubusercontent.com/16079222/234807147-04ed613f-a3e4-4547-8b9e-e761801a7ca0.gif)
+![asciicast](https://user-images.githubusercontent.com/16079222/234809580-9742230b-5730-4bea-8cbf-e38ea4f84fef.gif)

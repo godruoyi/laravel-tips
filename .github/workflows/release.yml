@@ -41,11 +41,11 @@ jobs:
         run: rustup target add ${{ matrix.target2 }}
 
       - name: Build default target in release mode
-        run: cargo build --release --target ${{ matrix.target }} --locked
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Build Apple ARM64 target in release mode
         if: ${{ matrix.os == 'macos-latest' }}
-        run: cargo build --release --target ${{ matrix.target2 }} --locked
+        run: cargo build --release --target ${{ matrix.target2 }}
 
       - name: Get latest release version number
         id: get_version

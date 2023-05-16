@@ -1,6 +1,8 @@
 use base64::{engine::general_purpose, Engine};
+use home::home_dir;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 pub fn base64_decode(c: String) -> anyhow::Result<String> {
     // github api response always has a newline between each base64 part
@@ -54,24 +56,42 @@ fn process_line(mut state: (Option<Tip>, Vec<Tip>), line: &str) -> (Option<Tip>,
     state
 }
 
-pub fn save_tips_to_disk<T: Serialize>(tips: &Vec<T>) -> anyhow::Result<()> {
+pub fn save_tips_to_disk<T: Serialize>(path: Option<String>, tips: &Vec<T>) -> anyhow::Result<()> {
     let json = serde_json::to_string(&tips)?;
-    std::fs::write("tips.json", json)?;
+    std::fs::write(normalize_path(path, "tips.json"), json)?;
+
     Ok(())
 }
 
-pub fn load_tips_from_disk<T: DeserializeOwned>() -> anyhow::Result<Vec<T>> {
-    let json = std::fs::read_to_string("tips.json")?;
+pub fn load_tips_from_disk<T: DeserializeOwned>(path: Option<String>) -> anyhow::Result<Vec<T>> {
+    let path = normalize_path(path, "tips.json");
+    let json = std::fs::read_to_string(path)?;
 
     Ok(serde_json::from_str(&json)?)
+}
+
+fn normalize_path(path: Option<String>, suffix: &str) -> String {
+    PathBuf::from(path.unwrap_or_else(|| {
+        let p = format!("{}/.laravel", home_dir().unwrap().to_str().unwrap());
+        if let Err(err) = std::fs::metadata(&p) {
+            match err.kind() {
+                std::io::ErrorKind::NotFound => {
+                    std::fs::create_dir(&p).unwrap();
+                }
+                _ => panic!("create dir failed: {}", err),
+            }
+        }
+        p
+    }))
+    .join(suffix)
+    .to_str()
+    .unwrap()
+    .to_string()
 }
 
 #[cfg(test)]
 mod test_base {
     use super::*;
-    use crate::http;
-    use serde_json::Value;
-    use std::collections;
 
     #[test]
     fn test_base64_decode_from_local_file() {
@@ -83,28 +103,38 @@ mod test_base {
     }
 
     #[test]
-    fn test_base64_decode_from_github_api() {
-        let resp = http::http_get::<collections::HashMap<String, Value>>("https://api.github.com/repos/LaravelDaily/laravel-tips/git/blobs/5b7d0d2cc4f6865b8492e47ed6eb3d0beecd4482");
-        assert!(resp.is_ok());
-
-        let encode_content = resp
-            .unwrap()
-            .get("content")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .to_string();
-
-        let x = base64_decode(encode_content);
-        assert!(x.is_ok());
-    }
-
-    #[test]
     fn test_parse_tips() {
         let encode_content = std::fs::read_to_string("testdata/api_base64.md");
         assert!(encode_content.is_ok());
 
         let x = parse_tips(encode_content.unwrap());
         assert!(x.is_ok());
+    }
+
+    #[test]
+    fn test_can_normalize_path() {
+        let path = Some("/tmp".to_string());
+        let suffix = "tips.json";
+        let p = normalize_path(path, suffix);
+
+        assert_eq!(p, "/tmp/tips.json");
+    }
+
+    #[test]
+    fn test_can_save_and_load_tips_from_disk() {
+        let tips = vec![Tip {
+            title: "test".to_string(),
+            content: "test".to_string(),
+        }];
+
+        assert!(save_tips_to_disk(None, &tips).is_ok());
+        let p = normalize_path(None, "tips.json");
+        assert!(std::fs::metadata(&p).is_ok());
+
+        let tips = load_tips_from_disk::<Tip>(None);
+        assert!(tips.is_ok());
+        assert_eq!(tips.unwrap()[0].title, "test");
+
+        std::fs::remove_file(p).unwrap();
     }
 }

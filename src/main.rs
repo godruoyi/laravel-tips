@@ -1,20 +1,17 @@
 mod github;
-mod http;
-mod parser;
 mod utils;
-
 #[macro_use]
 mod ui;
 
-use crate::parser::Entity;
+use crate::github::Entity;
 use crate::SubCommands::Sync;
 use argh::FromArgs;
-use rand::seq::SliceRandom;
+use rand::prelude::SliceRandom;
 
-const VERSION: &str = "0.0.1";
+const VERSION: &str = "0.0.2";
 
 #[derive(FromArgs, Debug)]
-#[argh(description = "A sample program")]
+#[argh(description = "A command line tool for laravel tips")]
 struct Args {
     #[argh(switch, short = 'v')]
     #[argh(description = "show version")]
@@ -22,6 +19,10 @@ struct Args {
 
     #[argh(subcommand)]
     nested: Option<SubCommands>,
+
+    #[argh(option, short = 'p')]
+    #[argh(description = "path to save all tips, default it $HOME/.laravel-tips")]
+    path: Option<String>,
 }
 
 #[derive(FromArgs, Debug)]
@@ -60,50 +61,25 @@ fn main() {
 
     match command {
         SubCommands::Random(_) => {
-            let x: Vec<Entity> = utils::load_tips_from_disk().unwrap_or_else(|_| {
-                let entities = parser::parse().unwrap();
-                utils::save_tips_to_disk(&entities).unwrap();
-                entities
-            });
+            if let Ok(entities) = utils::load_tips_from_disk::<Entity>(args.path) {
+                if !entities.is_empty() {
+                    let mut rng = rand::thread_rng();
+                    let entity = entities.choose(&mut rng).unwrap();
 
-            let mut rng = rand::thread_rng();
-            let entity = x.choose(&mut rng).unwrap();
-
-            // @todo refactor and move to ui mod
-            bat::PrettyPrinter::new()
-                .input_from_bytes(entity.title.as_bytes())
-                .grid(false)
-                .theme("zenburn")
-                .line_numbers(false)
-                .header(false)
-                .print()
-                .unwrap();
-            println!();
-            bat::PrettyPrinter::new()
-                .language("markdown")
-                .input_from_bytes(entity.content.as_bytes())
-                .theme("zenburn")
-                .grid(false)
-                .line_numbers(false)
-                .colored_output(true)
-                .true_color(true)
-                .header(false)
-                .print()
-                .unwrap();
+                    pretty_tip!(entity.title, entity.content);
+                    std::process::exit(0);
+                }
+            }
+            error!("can not load tips from disk, please run [sync] first");
         }
         Sync(_) => {
-            log!(
-                "Start sync all laravel tips from {} ...",
-                "LaravelDaily/laravel-tips"
-            );
+            log!("Start sync all laravel tips from LaravelDaily/laravel-tips\n");
 
-            let entities = parser::parse().unwrap();
-            utils::save_tips_to_disk(&entities).unwrap();
+            let (trees, total) = github::get_get_laravel_tips_trees_with_size()
+                .expect("can not get trees from github");
+            ui::progress_bar(total, github::process_trees(args.path, trees));
 
-            success!(
-                "Sync all laravel tips from {} successfully",
-                "LaravelDaily/laravel-tips"
-            );
+            success!("Sync all laravel tips from successfully, run [random] to get a lucky tip");
         }
     }
 }

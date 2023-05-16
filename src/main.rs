@@ -51,7 +51,20 @@ fn main() {
     }
 
     if args.nested.is_none() {
-        println!("\nWelcome to laravel tips\n");
+        println!(
+            "Usage: laraveltips [-v] [<command>] [<args>]
+
+A command line tool for laravel tips
+
+Options:
+  -v, --version     show version
+  --help            display usage information
+  --path|-p         set laravel tips storage path, default is ~/.laravel/tips.json
+
+Commands:
+  random            random laravel tips
+  sync              sync laravel tips from laravel docs"
+        );
         std::process::exit(0);
     }
 

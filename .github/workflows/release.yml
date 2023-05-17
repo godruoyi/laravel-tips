@@ -2,7 +2,10 @@ name: release
 
 on:
   push:
+    branches:
+      - master
     tags:
+      - 'v*.*.*'
 
 jobs:
   create-release:
@@ -12,7 +15,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        #        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        os: [ macos-latest ]
         include:
           - os: ubuntu-latest
             name: Linux Binary 64-Bit

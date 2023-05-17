@@ -12,6 +12,13 @@ interested in it, enjoy 🐕‍🦺🦧🦥.
 We load the all tips from [LaravelDaily laravel-tips](https://github.com/LaravelDaily/laravel-tips) and store them in a
 json file, and then we use [bat](https://github.com/sharkdp/bat) to display the tips in the terminal.
 
+## TODO
+
+- [ ] Use SQLite to store tips
+- [ ] Add search command
+- [ ] Use SQLite FT5 support full-text search
+- [ ] Multi thread download tips
+
 ## Basic Usage
 
 ```

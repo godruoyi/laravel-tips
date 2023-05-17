@@ -1,10 +1,9 @@
 name: release
 
+#todo still failing, will back soon
+
 on:
   push:
-    # test
-    branches:
-      - master
     tags:
       - "v*.*.*"
 

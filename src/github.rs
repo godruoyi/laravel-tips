@@ -1,9 +1,8 @@
-use crate::utils;
-use crate::utils::{save_tips_to_disk, Tip};
-use indicatif::ProgressBar;
+use crate::model::{Entity, Tip};
+use crate::{log, utils};
 use reqwest::header::HeaderValue;
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 const ENV_LARAVEL_TIPS_ACCESS_TOKEN: &str = "LARAVEL_TIPS_ACCESS_TOKEN";
 const ENV_HTTP_USER_AGENT: &str = "LARAVEL_TIPS_HTTP_USER_AGENT";
@@ -24,85 +23,66 @@ struct Trees {
 pub struct Tree {
     path: String,
     url: String,
-    size: usize,
 }
 
 impl Tree {
     /// Check if the file is readme.md
     pub fn is_readme(&self) -> bool {
-        self.path.to_uppercase() == "README.md"
-    }
-
-    /// Get the file size, bytes
-    pub fn get_size(&self) -> usize {
-        self.size
+        self.path == "README.md"
     }
 
     /// Get the file content, note that the content is base64 encoded
-    pub fn get_content(&self) -> anyhow::Result<String> {
+    pub async fn get_content(&self) -> anyhow::Result<String> {
+        log!(format!("parsing file: {}", &self.path));
+
         #[derive(Deserialize)]
         struct Content {
             content: String,
         }
 
-        let res = http_get::<Content>(&self.url)?;
+        let res = http_get::<Content>(&self.url).await?;
 
         Ok(res.content)
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Entity {
-    pub title: String,
-    pub content: String,
+pub async fn parse_all_laravel_tips() -> anyhow::Result<Vec<Entity>> {
+    // 1. get all tips file from the laravel-tips repository
+    let trees: Vec<Tree> = get_laravel_tips_trees().await?;
+    let mut entities: Vec<Entity> = Vec::new();
+
+    // 2. generate the tasks for each file
+    let tasks: Vec<_> = trees
+        .iter()
+        .filter(|tree| !tree.is_readme())
+        .map(|t| t.get_content())
+        .collect();
+
+    // 3. wait for all tasks to complete
+    let result = futures::future::join_all(tasks).await;
+    for content in result.into_iter().flatten() {
+        if let Ok(tips) = utils::parse_tips(content) {
+            entities.extend(convert_tips_to_entities(tips));
+        }
+    }
+
+    Ok(entities)
 }
 
 /// Get all tips file from the github repository
 ///
 /// We will get the all files from the LaravelDaily/laravel-tips repository
-pub fn get_laravel_tips_trees() -> anyhow::Result<Vec<Tree>> {
-    let res = http_get::<Trees>(GITHUB_TREES_API)?;
+async fn get_laravel_tips_trees() -> anyhow::Result<Vec<Tree>> {
+    let res = http_get::<Trees>(GITHUB_TREES_API).await?;
 
     Ok(res.tree)
-}
-
-pub fn get_get_laravel_tips_trees_with_size() -> anyhow::Result<(Vec<Tree>, u64)> {
-    let trees = get_laravel_tips_trees()?;
-    let total: usize = trees
-        .iter()
-        .filter(|t| !t.is_readme())
-        .map(|t| t.get_size())
-        .sum();
-
-    Ok((trees, total as u64))
-}
-
-pub fn process_trees(path: Option<String>, trees: Vec<Tree>) -> impl Fn(&mut ProgressBar) {
-    move |pb: &mut ProgressBar| {
-        let mut entities: Vec<Entity> = Vec::new();
-
-        for tree in trees.iter() {
-            if tree.is_readme() {
-                continue;
-            }
-
-            if let Ok(content) = tree.get_content() {
-                if let Ok(tips) = utils::parse_tips(content) {
-                    entities.extend(convert_tips_to_entities(tips));
-                }
-            }
-
-            pb.set_position(pb.position() + tree.get_size() as u64);
-        }
-
-        save_tips_to_disk(path.clone(), &entities).unwrap();
-    }
 }
 
 fn convert_tips_to_entities(tips: Vec<Tip>) -> Vec<Entity> {
     tips.into_iter()
         //@todo adding more fields when converting from utils::Tip to Entity, such as code(php/blade/html), author, link, etc.
         .map(|t| Entity {
+            id: "".to_string(),
             title: t.title,
             content: t.content,
         })
@@ -110,7 +90,7 @@ fn convert_tips_to_entities(tips: Vec<Tip>) -> Vec<Entity> {
 }
 
 /// Basic http get method,
-fn http_get<T: DeserializeOwned>(url: &str) -> anyhow::Result<T> {
+async fn http_get<T: DeserializeOwned>(url: &str) -> anyhow::Result<T> {
     let mut headers = reqwest::header::HeaderMap::new();
     let agent = std::env::var(ENV_HTTP_USER_AGENT).unwrap_or_else(|_| "laravel-tips".to_string());
     let accept = std::env::var(ENV_HTTP_ACCEPR)
@@ -132,11 +112,11 @@ fn http_get<T: DeserializeOwned>(url: &str) -> anyhow::Result<T> {
         );
     }
 
-    let client = reqwest::blocking::Client::builder()
+    let client = reqwest::Client::builder()
         .default_headers(headers)
         .build()?;
 
-    let res = client.get(url).send()?.json::<T>()?;
+    let res = client.get(url).send().await?.json::<T>().await?;
 
     Ok(res)
 }
@@ -148,10 +128,9 @@ mod tests {
     use serde_json::Value;
     use std::collections;
 
-    #[test]
-    fn test_base64_decode_from_github_api() {
-        let resp = http_get::<collections::HashMap<String, Value>>("https://api.github.com/repos/LaravelDaily/laravel-tips/git/blobs/5b7d0d2cc4f6865b8492e47ed6eb3d0beecd4482");
-        assert!(resp.is_ok());
+    #[tokio::test]
+    async fn test_base64_decode_from_github_api() {
+        let resp = http_get::<collections::HashMap<String, Value>>("https://api.github.com/repos/LaravelDaily/laravel-tips/git/blobs/5b7d0d2cc4f6865b8492e47ed6eb3d0beecd4482").await;
 
         let encode_content = resp
             .unwrap()

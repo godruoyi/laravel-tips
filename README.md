@@ -9,8 +9,8 @@ interested in it, enjoy 🐕‍🦺🦧🦥.
 
 ## Principle
 
-We load the all tips from [LaravelDaily laravel-tips](https://github.com/LaravelDaily/laravel-tips) and store them in a
-json file, and then we use [bat](https://github.com/sharkdp/bat) to display the tips in the terminal.
+We load the all tips from [LaravelDaily Tips](https://github.com/LaravelDaily/laravel-tips) and store them in a
+json file, then we use [bat](https://github.com/sharkdp/bat) to display the tips in the terminal.
 
 ## TODO
 

@@ -2,13 +2,13 @@ mod github;
 mod utils;
 #[macro_use]
 mod ui;
+mod model;
+mod storage;
 
-use crate::github::Entity;
 use crate::SubCommands::Sync;
 use argh::FromArgs;
-use rand::prelude::SliceRandom;
 
-const VERSION: &str = "0.0.2";
+const VERSION: &str = "0.0.3";
 
 #[derive(FromArgs, Debug)]
 #[argh(description = "A command line tool for laravel tips")]
@@ -20,9 +20,9 @@ struct Args {
     #[argh(subcommand)]
     nested: Option<SubCommands>,
 
-    #[argh(option, short = 'p')]
-    #[argh(description = "path to save all tips, default it $HOME/.laravel-tips")]
-    path: Option<String>,
+    #[argh(option, long = "file-path")]
+    #[argh(description = "specify the file path to store tips, default is $HOME/.laravel/.tips")]
+    file_path: Option<String>,
 }
 
 #[derive(FromArgs, Debug)]
@@ -30,6 +30,7 @@ struct Args {
 enum SubCommands {
     Random(RandomCommand),
     Sync(SyncCommand),
+    Search(SearchCommand),
 }
 
 #[derive(FromArgs, Debug)]
@@ -42,7 +43,20 @@ struct RandomCommand {}
 #[argh(description = "sync laravel tips from laravel docs")]
 struct SyncCommand {}
 
-fn main() {
+#[derive(FromArgs, Debug)]
+#[argh(subcommand, name = "search")]
+#[argh(description = "search laravel tips by keyword")]
+struct SearchCommand {
+    #[argh(positional)]
+    keyword: String,
+
+    #[argh(option, short = 'g')]
+    #[argh(description = "specify the group to search, such as 'eloquent', 'artisan', 'arr'")]
+    group: Option<String>,
+}
+
+#[tokio::main]
+async fn main() {
     let args: Args = argh::from_env();
 
     if args.version {
@@ -51,8 +65,60 @@ fn main() {
     }
 
     if args.nested.is_none() {
-        println!(
-            "Usage: laraveltips [-v] [<command>] [<args>]
+        println!("{}", WELOCOME);
+        std::process::exit(0);
+    }
+
+    let command = args.nested.unwrap_or_else(|| {
+        std::process::exit(1);
+    });
+
+    let storage = storage::new_storage(args.file_path);
+
+    match command {
+        SubCommands::Random(_) => match storage.random().await {
+            Ok(Some(e)) => {
+                pretty_tip!(e.title, e.content)
+            }
+            Ok(None) => {
+                error!("can not load tips from disk, please run [sync] first");
+            }
+            Err(e) => {
+                error!(format!("we got an error: {}", e));
+            }
+        },
+        SubCommands::Search(command) => {
+            log!(format!(
+                "Start search laravel tips by keyword: {}, group: {}",
+                command.keyword,
+                command.group.unwrap_or_default()
+            ));
+
+            log!("to be continue...")
+        }
+        Sync(_) => {
+            log!("Start sync all laravel tips from LaravelDaily/laravel-tips");
+
+            let entities = match github::parse_all_laravel_tips().await {
+                Ok(entities) => entities,
+                Err(err) => {
+                    error!(format!("encountered an error: {}", err));
+                    std::process::exit(1);
+                }
+            };
+
+            if let Err(err) = storage.store(entities).await {
+                error!(format!("encountered an error: {}", err));
+                std::process::exit(1);
+            }
+
+            success!("Sync all laravel tips from successfully, run [random] to get a lucky tip");
+        }
+    }
+}
+
+static WELOCOME: &str = r#"
+Usage: laraveltips [-v] [<command>] [<args>]
 
 A command line tool for laravel tips
 
@@ -63,36 +129,6 @@ Options:
 
 Commands:
   random            random laravel tips
-  sync              sync laravel tips from laravel docs"
-        );
-        std::process::exit(0);
-    }
-
-    let command = args.nested.unwrap_or_else(|| {
-        std::process::exit(1);
-    });
-
-    match command {
-        SubCommands::Random(_) => {
-            if let Ok(entities) = utils::load_tips_from_disk::<Entity>(args.path) {
-                if !entities.is_empty() {
-                    let mut rng = rand::thread_rng();
-                    let entity = entities.choose(&mut rng).unwrap();
-
-                    pretty_tip!(entity.title, entity.content);
-                    std::process::exit(0);
-                }
-            }
-            error!("can not load tips from disk, please run [sync] first");
-        }
-        Sync(_) => {
-            log!("Start sync all laravel tips from LaravelDaily/laravel-tips\n");
-
-            let (trees, total) = github::get_get_laravel_tips_trees_with_size()
-                .expect("can not get trees from github");
-            ui::progress_bar(total, github::process_trees(args.path, trees));
-
-            success!("Sync all laravel tips from successfully, run [random] to get a lucky tip");
-        }
-    }
-}
+  sync              sync laravel tips from laravel docs
+  search            search laravel tips by keyword
+"#;

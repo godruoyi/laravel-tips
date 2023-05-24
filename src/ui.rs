@@ -1,11 +1,6 @@
-use indicatif::{ProgressBar, ProgressState, ProgressStyle};
-use std::fmt::Write;
-
 macro_rules! success {
     ($msg:literal) => {{
         use console::{style, Emoji};
-        println!();
-        println!();
         println!(
             "{} {}",
             style(Emoji("🌽", "🐕‍🦺")).green(),
@@ -15,7 +10,7 @@ macro_rules! success {
 }
 
 macro_rules! error {
-    ($msg:literal) => {{
+    ($msg:expr) => {{
         use console::{style, Emoji};
         println!("{} {}", style(Emoji("🦧", "x")).red(), style($msg).yellow());
     }};
@@ -46,34 +41,25 @@ macro_rules! pretty_tip {
     }};
 }
 
+#[macro_export]
 macro_rules! log {
-    ($msg:literal) => {{
+    ($msg:expr) => {{
         use console::{style, Emoji};
+        use rand::prelude::SliceRandom;
 
-        println!(
-            "{} {}",
-            style(Emoji("🦙", "✓")).green(),
-            style($msg).green()
-        );
+        let emojis = vec![
+            Emoji("🍡", "✓"),
+            Emoji("🐞", "✓"),
+            Emoji("🐕‍🦺", "✓"),
+            Emoji("🐘", "✓"),
+            Emoji("🍅", "✓"),
+            Emoji("🐫", "✓"),
+            Emoji("🐻", "✓"),
+        ];
+
+        let mut rng = rand::thread_rng();
+        let emoji = emojis.choose(&mut rng).unwrap();
+
+        println!("{} {}", style(emoji).green(), style($msg).dim());
     }};
-}
-
-// @todo refactor this to macro
-pub fn progress_bar(total: u64, callback: impl Fn(&mut ProgressBar)) {
-    let mut pb = ProgressBar::new(total);
-
-    pb.set_style(
-        ProgressStyle::with_template(
-            "🐘 [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos:>7}/{len:7} ({eta}) {msg}",
-        )
-        .unwrap()
-        .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
-            write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()
-        })
-        .progress_chars("#>-"),
-    );
-
-    callback(&mut pb);
-
-    pb.finish_with_message("Done");
 }

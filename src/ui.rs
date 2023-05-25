@@ -49,17 +49,29 @@ macro_rules! log {
 
         let emojis = vec![
             Emoji("🍡", "✓"),
-            Emoji("🐞", "✓"),
-            Emoji("🐕‍🦺", "✓"),
-            Emoji("🐘", "✓"),
+            Emoji("🍋", "✓"),
             Emoji("🍅", "✓"),
-            Emoji("🐫", "✓"),
-            Emoji("🐻", "✓"),
+            Emoji("🍺", "✓"),
+            Emoji("🍓", "✓"),
+            Emoji("🥑", "✓"),
+            Emoji("🥦", "✓"),
         ];
 
         let mut rng = rand::thread_rng();
         let emoji = emojis.choose(&mut rng).unwrap();
+        let space = &$msg.starts_with(' ');
 
-        println!("{} {}", style(emoji).green(), style($msg).dim());
+        println!(
+            "{}{} {}",
+            if *space { "  " } else { "" },
+            style(emoji).green(),
+            style($msg.trim()).dim(),
+        );
+    }};
+}
+
+macro_rules! pretty_tips {
+    ($msg:expr) => {{
+        log!(format!("we got {} tips", $msg.len()));
     }};
 }

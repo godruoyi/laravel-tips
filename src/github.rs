@@ -33,7 +33,7 @@ impl Tree {
 
     /// Get the file content, note that the content is base64 encoded
     pub async fn get_content(&self) -> anyhow::Result<String> {
-        log!(format!("parsing file: {}", &self.path));
+        log!(format!(" parsing file: {}", &self.path));
 
         #[derive(Deserialize)]
         struct Content {

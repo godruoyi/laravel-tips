@@ -2,7 +2,7 @@ use crate::model::Entity;
 use crate::storage::Storage;
 use async_trait::async_trait;
 
-struct SqliteStorage {}
+pub struct SqliteStorage {}
 
 #[async_trait]
 impl Storage for SqliteStorage {

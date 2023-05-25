@@ -20,8 +20,14 @@ struct Args {
     #[argh(subcommand)]
     nested: Option<SubCommands>,
 
+    #[argh(option, short = 'e')]
+    #[argh(description = "specify the search engine, default is SQLite, support [sqlite, file]")]
+    engin: Option<SearchEngine>,
+
     #[argh(option, long = "file-path")]
-    #[argh(description = "specify the file path to store tips, default is $HOME/.laravel/.tips")]
+    #[argh(
+        description = "specify the file path to store tips, available when engin is file, default is $HOME/.laravel/.tips"
+    )]
     file_path: Option<String>,
 }
 
@@ -31,6 +37,25 @@ enum SubCommands {
     Random(RandomCommand),
     Sync(SyncCommand),
     Search(SearchCommand),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SearchEngine {
+    SQLite,
+    File,
+}
+
+impl argh::FromArgValue for SearchEngine {
+    fn from_arg_value(value: &str) -> Result<Self, String> {
+        match value {
+            "sqlite" | "s" => Ok(Self::SQLite),
+            "file" | "f" => Ok(Self::File),
+            _ => Err(format!(
+                "unknown search engine: {}, only support [sqlite, file]",
+                value
+            )),
+        }
+    }
 }
 
 #[derive(FromArgs, Debug)]
@@ -73,7 +98,7 @@ async fn main() {
         std::process::exit(1);
     });
 
-    let storage = storage::new_storage(args.file_path);
+    let storage = storage::new_storage(args.engin, args.file_path);
 
     match command {
         SubCommands::Random(_) => match storage.random().await {
@@ -87,15 +112,17 @@ async fn main() {
                 error!(format!("we got an error: {}", e));
             }
         },
-        SubCommands::Search(command) => {
-            log!(format!(
-                "Start search laravel tips by keyword: {}, group: {}",
-                command.keyword,
-                command.group.unwrap_or_default()
-            ));
-
-            log!("to be continue...")
-        }
+        SubCommands::Search(command) => match storage
+            .search(&command.keyword, command.group.as_deref())
+            .await
+        {
+            Ok(entities) => {
+                pretty_tips!(entities);
+            }
+            Err(e) => {
+                error!(format!("encountered an error: {}", e));
+            }
+        },
         Sync(_) => {
             log!("Start sync all laravel tips from LaravelDaily/laravel-tips");
 

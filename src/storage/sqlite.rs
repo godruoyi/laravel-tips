@@ -1,8 +1,15 @@
 use crate::model::Entity;
 use crate::storage::Storage;
 use async_trait::async_trait;
+use rusqlite::Connection;
 
 pub struct SqliteStorage {}
+
+impl SqliteStorage {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
 
 #[async_trait]
 impl Storage for SqliteStorage {

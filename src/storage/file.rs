@@ -1,8 +1,8 @@
 use crate::model::Entity;
 use crate::storage::Storage;
+use crate::utils::normalize_path;
 use anyhow::anyhow;
 use async_trait::async_trait;
-use home::home_dir;
 use rand::prelude::SliceRandom;
 use std::path::PathBuf;
 
@@ -16,14 +16,13 @@ impl FileStorage {
         Self { path, suffix }
     }
 
-    fn normalize_path(&self) -> String {
-        self.path
+    fn path(&self) -> anyhow::Result<String> {
+        let suffix = self
+            .suffix
             .clone()
-            .unwrap_or_else(create_default_laravel_directory)
-            .join(self.suffix.clone().unwrap_or_else(|| ".tips".to_string()))
-            .to_str()
-            .unwrap()
-            .to_string()
+            .unwrap_or_else(|| "tips.json".to_string());
+
+        normalize_path(suffix, self.path.clone())
     }
 }
 
@@ -31,13 +30,14 @@ impl FileStorage {
 impl Storage for FileStorage {
     async fn store(&self, entities: Vec<Entity>) -> anyhow::Result<()> {
         let json = serde_json::to_string(&entities)?;
-        std::fs::write(self.normalize_path(), json)?;
+
+        std::fs::write(self.path()?, json)?;
 
         Ok(())
     }
 
     async fn random(&self) -> anyhow::Result<Option<Entity>> {
-        let path = self.normalize_path();
+        let path = self.path()?;
         let m = std::fs::metadata(&path);
 
         if m.is_err() || !m.unwrap().is_file() {
@@ -68,7 +68,7 @@ impl Storage for FileStorage {
     }
 
     async fn flush(&self) -> anyhow::Result<()> {
-        let path = self.normalize_path();
+        let path = self.path()?;
         let m = std::fs::metadata(&path);
 
         // cannot flush if file not exists or something wrong
@@ -84,53 +84,9 @@ impl Storage for FileStorage {
     }
 }
 
-fn create_default_laravel_directory() -> PathBuf {
-    let p = format!("{}/.laravel", home_dir().unwrap().to_str().unwrap());
-    if let Err(err) = std::fs::metadata(&p) {
-        match err.kind() {
-            std::io::ErrorKind::NotFound => {
-                std::fs::create_dir(&p).unwrap();
-            }
-            _ => panic!("cannot create directory, path: {}, err: {}", &p, err),
-        }
-    }
-
-    PathBuf::from(p)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_can_normalize_path() {
-        let storage = FileStorage::new(None, None);
-        let p = storage.normalize_path();
-
-        assert_eq!(
-            p,
-            format!("{}/.laravel/.tips", home_dir().unwrap().to_str().unwrap())
-        );
-    }
-
-    #[test]
-    fn test_can_normalize_path_with_path() {
-        let storage = FileStorage::new(Some(PathBuf::from("path1/path2")), None);
-        let p = storage.normalize_path();
-
-        assert_eq!(p, "path1/path2/.tips");
-    }
-
-    #[test]
-    fn test_can_normalize_path_with_path_and_suffix() {
-        let storage = FileStorage::new(
-            Some(PathBuf::from("path1/path2")),
-            Some(".laravel".to_string()),
-        );
-        let p = storage.normalize_path();
-
-        assert_eq!(p, "path1/path2/.laravel");
-    }
 
     #[tokio::test]
     async fn test_search() {
@@ -180,6 +136,8 @@ mod tests {
 
         assert!(entity.is_some());
         assert_eq!(entity.unwrap().id, "1");
+
+        storage.flush().await.expect("flush failed");
     }
 
     fn file_path() -> PathBuf {

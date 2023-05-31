@@ -24,11 +24,9 @@ struct Args {
     #[argh(description = "specify the search engine, default is SQLite, support [sqlite, file]")]
     engin: Option<SearchEngine>,
 
-    #[argh(option, long = "file-path")]
-    #[argh(
-        description = "specify the file path to store tips, available when engin is file, default is $HOME/.laravel/.tips"
-    )]
-    file_path: Option<String>,
+    #[argh(option, long = "path")]
+    #[argh(description = "specify the path to store tips, default is $HOME/.laravel")]
+    path: Option<String>,
 }
 
 #[derive(FromArgs, Debug)]
@@ -98,7 +96,7 @@ async fn main() {
         std::process::exit(1);
     });
 
-    let storage = storage::new_storage(args.engin, args.file_path);
+    let storage = storage::new_storage(args.engin, args.path);
 
     match command {
         SubCommands::Random(_) => match storage.random().await {

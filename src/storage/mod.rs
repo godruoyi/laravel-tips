@@ -9,7 +9,7 @@ mod file;
 mod sqlite;
 
 #[async_trait]
-pub trait Storage {
+pub trait Storage: Send + Sync {
     async fn store(&self, entities: Vec<Entity>) -> anyhow::Result<()>;
     async fn random(&self) -> anyhow::Result<Option<Entity>>;
     async fn search(&self, keyword: &str, group: Option<&str>) -> anyhow::Result<Vec<Entity>>;
@@ -19,8 +19,10 @@ pub trait Storage {
 pub fn new_storage(engin: Option<SearchEngine>, path: Option<String>) -> Box<dyn Storage> {
     // @todo use parameter to decide which storage to use
 
+    let p = path.map(PathBuf::from);
+
     match engin {
-        Some(SearchEngine::File) => Box::new(FileStorage::new(path.map(PathBuf::from), None)),
-        _ => Box::new(SqliteStorage {}),
+        Some(SearchEngine::File) => Box::new(FileStorage::new(p, None)),
+        _ => Box::new(SqliteStorage::new(p)),
     }
 }

@@ -72,6 +72,7 @@ macro_rules! log {
 
 macro_rules! pretty_tips {
     ($msg:expr) => {{
+        // @todo find a pretty way to print tips
         log!(format!("we got {} tips", $msg.len()));
     }};
 }

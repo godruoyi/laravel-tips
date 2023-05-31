@@ -14,10 +14,12 @@ json file, then we use [bat](https://github.com/sharkdp/bat) to display the tips
 
 ## TODO
 
-- [ ] Use SQLite to store tips
-- [ ] Add search command
+- [x] Support file and SQLite engin
+- [x] Use SQLite to store tips
+- [x] Add search command
+- [x] Multi thread download tips
 - [ ] Use SQLite FT5 support full-text search
-- [ ] Multi thread download tips
+- [ ] Find a way to display the tips in the terminal(may [charmbracelet/glow](https://github.com/charmbracelet/glow))
 
 ## Basic Usage
 

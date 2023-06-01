@@ -5,21 +5,23 @@
 [actions]: https://github.com/godruoyi/laravel-tips/actions?query=branch%3Amaster
 
 A small command program for laravel tips written in Rust. this repository is side project for learning Rust, if you are
-interested in it, enjoy 🐕‍🦺🦧🦥.
+interested get some luck laravel tips in your terminal, try it 🍡🦤.
 
 ## Principle
 
-We load the all tips from [LaravelDaily Tips](https://github.com/LaravelDaily/laravel-tips) and store them in a
-json file, then we use [bat](https://github.com/sharkdp/bat) to display the tips in the terminal.
+We load the all tips from [LaravelDaily Tips](https://github.com/LaravelDaily/laravel-tips) and store them using SQLite
+or
+file, then we use [termimad](https://github.com/Canop/termimad) to display the tips in the terminal.
 
-## TODO
+## Features
 
 - [x] Support file and SQLite engin
-- [x] Use SQLite to store tips
-- [x] Add search command
+- [x] Search tips by keyword
 - [x] Multi thread download tips
+- [x] Beautiful display tips in terminal(powered by [termimad](https://github.com/Canop/termimad))
 - [ ] Use SQLite FT5 support full-text search
-- [ ] Find a way to display the tips in the terminal(may [charmbracelet/glow](https://github.com/charmbracelet/glow))
+- [ ] Support PostgreSQL engin
+- [ ] PostgreSQL vector search?
 
 ## Basic Usage
 
@@ -30,8 +32,7 @@ Options:
   -v, --version     show version
   -e, --engin       specify the search engine, default is SQLite, support
                     [sqlite, file]
-  --file-path       specify the file path to store tips, available when engin is
-                    file, default is $HOME/.laravel/.tips
+  --path            specify the path to store tips, default is $HOME/.laravel
   --help            display usage information
 
 Commands:
@@ -42,4 +43,4 @@ Commands:
 
 ## ScreenShot
 
-![asciicast](https://user-images.githubusercontent.com/16079222/234809580-9742230b-5730-4bea-8cbf-e38ea4f84fef.gif)
+![laravel-tips](https://user-images.githubusercontent.com/16079222/242636067-803c1c9c-1dfe-4f18-abaf-2921a734888d.gif)

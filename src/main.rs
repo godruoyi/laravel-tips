@@ -101,7 +101,9 @@ async fn main() {
     match command {
         SubCommands::Random(_) => match storage.random().await {
             Ok(Some(e)) => {
-                pretty_tip!(e.title, e.content)
+                if let Err(err) = utils::pretty_tip(e) {
+                    error!(format!("encountered an error: {}", err));
+                }
             }
             Ok(None) => {
                 error!("can not load tips from disk, please run [sync] first");
@@ -115,7 +117,11 @@ async fn main() {
             .await
         {
             Ok(entities) => {
-                pretty_tips!(entities);
+                if entities.len() == 0 {
+                    log!("no tips found");
+                } else if let Err(err) = utils::pretty_tips(entities) {
+                    error!(format!("encountered an error: {}", err));
+                }
             }
             Err(e) => {
                 error!(format!("encountered an error: {}", e));
@@ -149,8 +155,7 @@ Options:
   -v, --version     show version
   -e, --engin       specify the search engine, default is SQLite, support
                     [sqlite, file]
-  --file-path       specify the file path to store tips, available when engin is
-                    file, default is $HOME/.laravel/.tips
+  --path            specify the path to store tips, default is $HOME/.laravel
   --help            display usage information
 
 Commands:

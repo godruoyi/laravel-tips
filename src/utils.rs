@@ -1,8 +1,17 @@
-use crate::model::Tip;
+use crate::model::{Entity, Tip};
 use anyhow::anyhow;
 use base64::{engine::general_purpose, Engine};
 use home::home_dir;
+use std::io::{stdout, Write};
 use std::path::PathBuf;
+use termimad::crossterm::{
+    cursor::{Hide, Show},
+    event::{self, Event, KeyCode::*, KeyEvent},
+    queue,
+    style::Color::*,
+    terminal::{self, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
+};
+use termimad::*;
 
 pub fn base64_decode(c: String) -> anyhow::Result<String> {
     // github api response always has a newline between each base64 part
@@ -74,6 +83,71 @@ fn create_default_laravel_directory() -> anyhow::Result<PathBuf> {
     }
 
     Ok(laravel_dir)
+}
+
+pub fn pretty_tip(entity: Entity) -> anyhow::Result<()> {
+    pretty_tips(vec![entity])
+}
+
+pub fn pretty_tips(entities: Vec<Entity>) -> anyhow::Result<()> {
+    let skin = make_skin();
+    // we could also have used stderr
+    let mut w = stdout();
+
+    queue!(w, EnterAlternateScreen)?;
+    terminal::enable_raw_mode()?;
+    queue!(w, Hide)?;
+
+    let contents = entities
+        .iter()
+        .map(|entity| format!("### {}\n{}\n", entity.title, entity.content))
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    let mut view = MadView::from(contents, view_area(), skin);
+    loop {
+        view.write_on(&mut w)?;
+        w.flush()?;
+        match event::read() {
+            Ok(Event::Key(KeyEvent { code, .. })) => match code {
+                Up | Char('k') | Char('K') => view.try_scroll_lines(-1),
+                Down | Char('j') | Char('J') => view.try_scroll_lines(1),
+                PageUp => view.try_scroll_pages(-1),
+                PageDown => view.try_scroll_pages(1),
+                _ => break,
+            },
+            Ok(Event::Resize(..)) => {
+                queue!(w, Clear(ClearType::All))?;
+                view.resize(&view_area());
+            }
+            _ => {}
+        }
+    }
+
+    terminal::disable_raw_mode()?;
+    queue!(w, Show)?; // we must restore the cursor
+    queue!(w, LeaveAlternateScreen)?;
+    w.flush()?;
+
+    Ok(())
+}
+
+fn view_area() -> Area {
+    let mut area = Area::full_screen();
+    area.pad_for_max_width(120);
+    area.pad(2, 2);
+    area
+}
+
+fn make_skin() -> MadSkin {
+    let mut skin = MadSkin::default();
+    skin.table.align = Alignment::Center;
+    skin.set_headers_fg(AnsiValue(178));
+    skin.bold.set_fg(Yellow);
+    skin.italic.set_fg(Magenta);
+    skin.scrollbar.thumb.set_fg(AnsiValue(178));
+
+    skin
 }
 
 #[cfg(test)]

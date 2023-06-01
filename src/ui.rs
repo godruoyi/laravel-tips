@@ -16,31 +16,6 @@ macro_rules! error {
     }};
 }
 
-macro_rules! pretty_tip {
-    ($title:expr, $content:expr) => {{
-        bat::PrettyPrinter::new()
-            .input_from_bytes($title.as_bytes())
-            .grid(false)
-            .theme("zenburn")
-            .line_numbers(false)
-            .header(false)
-            .print()
-            .unwrap();
-        println!();
-        bat::PrettyPrinter::new()
-            .language("markdown")
-            .input_from_bytes($content.as_bytes())
-            .theme("zenburn")
-            .grid(false)
-            .line_numbers(false)
-            .colored_output(true)
-            .true_color(true)
-            .header(false)
-            .print()
-            .unwrap();
-    }};
-}
-
 #[macro_export]
 macro_rules! log {
     ($msg:expr) => {{
@@ -67,12 +42,5 @@ macro_rules! log {
             style(emoji).green(),
             style($msg.trim()).dim(),
         );
-    }};
-}
-
-macro_rules! pretty_tips {
-    ($msg:expr) => {{
-        // @todo find a pretty way to print tips
-        log!(format!("we got {} tips", $msg.len()));
     }};
 }

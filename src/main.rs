@@ -117,7 +117,7 @@ async fn main() {
             .await
         {
             Ok(entities) => {
-                if entities.len() == 0 {
+                if entities.is_empty() {
                     log!("no tips found");
                 } else if let Err(err) = utils::pretty_tips(entities) {
                     error!(format!("encountered an error: {}", err));

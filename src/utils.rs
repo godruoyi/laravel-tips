@@ -89,6 +89,7 @@ pub fn pretty_tip(entity: Entity) -> anyhow::Result<()> {
     pretty_tips(vec![entity])
 }
 
+// @todo refactor this function to make it more clean and readable
 pub fn pretty_tips(entities: Vec<Entity>) -> anyhow::Result<()> {
     let skin = make_skin();
     // we could also have used stderr
@@ -98,11 +99,16 @@ pub fn pretty_tips(entities: Vec<Entity>) -> anyhow::Result<()> {
     terminal::enable_raw_mode()?;
     queue!(w, Hide)?;
 
-    let contents = entities
+    let size = &entities.len();
+    let mut contents = entities
         .iter()
         .map(|entity| format!("### {}\n{}\n", entity.title, entity.content))
         .collect::<Vec<String>>()
         .join("\n");
+
+    if size > &1 {
+        contents = format!("## Found {} tips\n\n\n\n{}", size, contents);
+    }
 
     let mut view = MadView::from(contents, view_area(), skin);
     loop {

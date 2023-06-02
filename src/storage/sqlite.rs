@@ -2,7 +2,7 @@ use crate::model::Entity;
 use crate::storage::Storage;
 use crate::utils::normalize_path;
 use async_trait::async_trait;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, Row};
 use std::path::PathBuf;
 
 const SQL_CREATE_TABLE: &str = r#"
@@ -74,16 +74,7 @@ impl Storage for SqliteStorage {
         let mut query =
             con.prepare("SELECT id, title, content FROM laravel_tips ORDER BY RANDOM() LIMIT 1")?;
 
-        let entity = query.query_row([], |row| {
-            let id: i64 = row.get(0)?;
-            let title: String = row.get(1)?;
-            let content: String = row.get(2)?;
-            Ok(Entity {
-                id: id.to_string(),
-                title,
-                content,
-            })
-        })?;
+        let entity = query.query_row([], parse_row_to_entity)?;
 
         Ok(Some(entity))
     }
@@ -97,16 +88,7 @@ impl Storage for SqliteStorage {
         )?;
 
         let keyword = format!("%{}%", keyword);
-        let rows = query.query_map(params![keyword.clone(), keyword], |row| {
-            let id: i64 = row.get(0)?;
-            let title: String = row.get(1)?;
-            let content: String = row.get(2)?;
-            Ok(Entity {
-                id: id.to_string(),
-                title,
-                content,
-            })
-        })?;
+        let rows = query.query_map(params![keyword.clone(), keyword], parse_row_to_entity)?;
 
         let mut entities = Vec::new();
         for row in rows {
@@ -124,4 +106,16 @@ impl Storage for SqliteStorage {
 
         Ok(())
     }
+}
+
+fn parse_row_to_entity(row: &Row) -> rusqlite::Result<Entity> {
+    let id: i64 = row.get(0)?;
+    let title: String = row.get(1)?;
+    let content: String = row.get(2)?;
+
+    Ok(Entity {
+        id: id.to_string(),
+        title,
+        content,
+    })
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Script for building your rust projects.
+# Script for building your rust projects
 set -e
 
 source scripts/common.bash

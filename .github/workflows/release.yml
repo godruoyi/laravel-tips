@@ -1,78 +1,194 @@
-name: release
-
-#todo still failing, will back soon
-
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+    branches:
+      - release-test
+
+name: Mean Bean Deploy
+env:
+  BIN: laraveltips
 
 jobs:
-  publish:
-    name: Publishing for ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+  # This job downloads and stores `cross` as an artifact, so that it can be
+  # redownloaded across all of the jobs. Currently this copied pasted between
+  # `ci.yml` and `deploy.yml`. Make sure to update both places when making
+  # changes.
+  install-cross:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: XAMPPRocky/get-github-release@v1
+        id: cross
+        with:
+          owner: rust-embedded
+          repo: cross
+          matches: ${{ matrix.platform }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v1
+        with:
+          name: cross-${{ matrix.platform }}
+          path: ${{ steps.cross.outputs.install_path }}
     strategy:
       matrix:
-        os: [ macos-latest, ubuntu-latest, windows-latest ]
-        rust: [ stable ]
-        include:
-          - os: macos-latest
-            artifact_prefix: macos
-            target: x86_64-apple-darwin
-            binary_postfix: ""
-          - os: ubuntu-latest
-            artifact_prefix: linux
-            target: x86_64-unknown-linux-gnu
-            binary_postfix: ""
-          - os: windows-latest
-            artifact_prefix: windows
-            target: x86_64-pc-windows-msvc
-            binary_postfix: ".exe"
+        platform: [ linux-musl, apple-darwin ]
 
+  #  windows:
+  #    runs-on: windows-latest
+  #    needs: install-cross
+  #    strategy:
+  #      matrix:
+  #        target:
+  #          # MSVC
+  #          - i686-pc-windows-msvc
+  #          - x86_64-pc-windows-msvc
+  #          # GNU
+  #          # - i686-pc-windows-gnu
+  #          # - x86_64-pc-windows-gnu
+  #    steps:
+  #      - uses: actions/checkout@v2
+  #      # FIXME: Hack around thinLTO being broken.
+  #      - run: echo "RUSTFLAGS=-Clto=fat" >> $GITHUB_ENV
+  #      - run: bash scripts/set_rust_version.bash stable ${{ matrix.target }}
+  #      - run: bash scripts/build.bash cargo ${{ matrix.target }} RELEASE
+  #        # We're using using a fork of `actions/create-release` that detects
+  #        # whether a release is already available or not first.
+  #      - uses: XAMPPRocky/create-release@v1.0.2
+  #        id: create_release
+  #        env:
+  #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #        with:
+  #          tag_name: ${{ github.ref }}
+  #          release_name: ${{ github.ref }}
+  #          # Draft should **always** be false. GitHub doesn't provide a way to
+  #          # get draft releases from its API, so there's no point using it.
+  #          draft: false
+  #          prerelease: true
+  #      - uses: actions/upload-release-asset@v1
+  #        id: upload-release-asset
+  #        env:
+  #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #        with:
+  #          upload_url: ${{ steps.create_release.outputs.upload_url }}
+  #          asset_path: target/${{ matrix.target }}/release/${{ env.BIN }}.exe
+  #          asset_name: ${{ env.BIN }}-${{ matrix.target }}.exe
+  #          asset_content_type: application/zip
+
+  macos:
+    runs-on: macos-latest
+    needs: install-cross
+    strategy:
+      matrix:
+        target:
+          # macOS
+          - x86_64-apple-darwin
+          # iOS
+          # - aarch64-apple-ios
+          # - armv7-apple-ios
+          # - armv7s-apple-ios
+          # - i386-apple-ios
+          # - x86_64-apple-ios
     steps:
-      - name: Installing Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v1
         with:
-          toolchain: ${{ matrix.rust }}
-          override: true
-      - name: Installing needed macOS dependencies
-        if: matrix.os == 'macos-latest'
-        run: brew install openssl@1.1
-      - name: Installing needed Ubuntu dependencies
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y -qq pkg-config libssl-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
-      - name: Checking out sources
-        uses: actions/checkout@v1
-      - name: Running cargo build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          toolchain: ${{ matrix.rust }}
-          args: --release --target ${{ matrix.target }}
+          name: cross-apple-darwin
+          path: /usr/local/bin/
+      - run: chmod +x /usr/local/bin/cross
 
-      - name: Packaging final binary
-        shell: bash
-        run: |
-          cd target/${{ matrix.target }}/release
-
-          BINARY_NAME=spt${{ matrix.binary_postfix }}
-          strip $BINARY_NAME
-
-          RELEASE_NAME=spotify-tui-${{ matrix.artifact_prefix }}
-          tar czvf $RELEASE_NAME.tar.gz $BINARY_NAME
-
-          if [[ ${{ runner.os }} == 'Windows' ]]; then
-            certutil -hashfile $RELEASE_NAME.tar.gz sha256 | grep -E [A-Fa-f0-9]{64} > $RELEASE_NAME.sha256
-          else
-            shasum -a 256 $RELEASE_NAME.tar.gz > $RELEASE_NAME.sha256
-          fi
-      - name: Releasing assets
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            target/${{ matrix.target }}/release/spotify-tui-${{ matrix.artifact_prefix }}.tar.gz
-            target/${{ matrix.target }}/release/spotify-tui-${{ matrix.artifact_prefix }}.sha256
+      - run: scripts/set_rust_version.bash stable ${{ matrix.target }}
+      - run: scripts/build.bash cross ${{ matrix.target }} RELEASE
+      - run: tar -czvf ${{ env.BIN }}.tar.gz --directory=target/${{ matrix.target }}/release ${{ env.BIN }}
+      - uses: XAMPPRocky/create-release@v1.0.2
+        id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: true
+      - uses: actions/upload-release-asset@v1
+        id: upload-release-asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.BIN }}.tar.gz
+          asset_name: ${{ env.BIN }}-${{ matrix.target }}.tar.gz
+          asset_content_type: application/gzip
+
+#  linux:
+#    runs-on: ubuntu-latest
+#    needs: install-cross
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        target:
+#          # WASM, off by default as most rust projects aren't compatible yet.
+#          # - wasm32-unknown-emscripten
+#          # Linux
+#          - aarch64-unknown-linux-gnu
+#          - arm-unknown-linux-gnueabi
+#          - armv7-unknown-linux-gnueabihf
+#          - i686-unknown-linux-gnu
+#          - i686-unknown-linux-musl
+#          - mips-unknown-linux-gnu
+#          - mips64-unknown-linux-gnuabi64
+#          - mips64el-unknown-linux-gnuabi64
+#          - mipsel-unknown-linux-gnu
+#          - powerpc64-unknown-linux-gnu
+#          - powerpc64le-unknown-linux-gnu
+#          - s390x-unknown-linux-gnu
+#          - x86_64-unknown-linux-gnu
+#          - x86_64-unknown-linux-musl
+#          # Android
+#          - aarch64-linux-android
+#          - arm-linux-androideabi
+#          - armv7-linux-androideabi
+#          - i686-linux-android
+#          - x86_64-linux-android
+#          # *BSD
+#          # The FreeBSD targets can have issues linking so they are disabled
+#          # by default.
+#          # - i686-unknown-freebsd
+#          # - x86_64-unknown-freebsd
+#          - x86_64-unknown-netbsd
+#          # Solaris
+#          - sparcv9-sun-solaris
+#          # Bare Metal
+#          # These are no-std embedded targets, so they will only build if your
+#          # crate is `no_std` compatible.
+#          # - thumbv6m-none-eabi
+#          # - thumbv7em-none-eabi
+#          # - thumbv7em-none-eabihf
+#          # - thumbv7m-none-eabi
+#    steps:
+#      - uses: actions/checkout@v2
+#      - uses: actions/download-artifact@v1
+#        with:
+#          name: cross-linux-musl
+#          path: /tmp/
+#      - run: chmod +x /tmp/cross
+#
+#      - run: scripts/set_rust_version.bash stable ${{ matrix.target }}
+#      - run: scripts/build.bash /tmp/cross ${{ matrix.target }} RELEASE
+#      - run: tar -czvf ${{ env.BIN }}.tar.gz --directory=target/${{ matrix.target }}/release ${{ env.BIN }}
+#      - uses: XAMPPRocky/create-release@v1.0.2
+#        id: create_release
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          tag_name: ${{ github.ref }}
+#          release_name: ${{ github.ref }}
+#          draft: false
+#          prerelease: false
+#      - name: Upload Release Asset
+#        id: upload-release-asset
+#        uses: actions/upload-release-asset@v1
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          upload_url: ${{ steps.create_release.outputs.upload_url }}
+#          asset_path: ${{ env.BIN }}.tar.gz
+#          asset_name: ${{ env.BIN }}-${{ matrix.target }}.tar.gz
+#          asset_content_type: application/gzip

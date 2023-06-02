@@ -23,6 +23,10 @@ file, then we use [termimad](https://github.com/Canop/termimad) to display the t
 - [ ] Support PostgreSQL engin
 - [ ] PostgreSQL vector search?
 
+## Installation
+
+- [ ] TODO
+
 ## Basic Usage
 
 ```
@@ -43,4 +47,12 @@ Commands:
 
 ## ScreenShot
 
+```shell
+$ laraveltips random
+```
+
 ![laravel-tips](https://user-images.githubusercontent.com/16079222/242636067-803c1c9c-1dfe-4f18-abaf-2921a734888d.gif)
+
+```shell
+$ laraveltips search findOr
+```

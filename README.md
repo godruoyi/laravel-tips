@@ -19,9 +19,9 @@ file, then we use [termimad](https://github.com/Canop/termimad) to display the t
 - [x] Search tips by keyword
 - [x] Multi thread download tips
 - [x] Beautiful display tips in terminal(powered by [termimad](https://github.com/Canop/termimad))
+- [ ] How to release binary file for multi-platform?
 - [ ] Use SQLite FT5 support full-text search
-- [ ] Support PostgreSQL engin
-- [ ] PostgreSQL vector search?
+- [ ] Support PostgreSQL engin and vector search?
 
 ## Basic Usage
 

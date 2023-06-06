@@ -35,7 +35,7 @@ impl SqliteStorage {
 
     /// Open a connection to the database.
     ///
-    /// @TODO if the connection is already open, return it.
+    /// @TODO if the connection is already open, reuse it.
     fn connection(&self) -> anyhow::Result<Connection> {
         let path = self.path()?;
 

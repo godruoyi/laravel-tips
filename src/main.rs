@@ -2,17 +2,18 @@ mod github;
 mod utils;
 #[macro_use]
 mod ui;
+mod command;
 mod model;
+mod pretty;
 mod storage;
 
-use crate::SubCommands::Sync;
 use argh::FromArgs;
 
 const VERSION: &str = "0.0.3";
 
 #[derive(FromArgs, Debug)]
 #[argh(description = "A command line tool for laravel tips")]
-struct Args {
+pub struct Args {
     #[argh(switch, short = 'v')]
     #[argh(description = "show version")]
     version: bool,
@@ -27,17 +28,27 @@ struct Args {
     #[argh(option, long = "path")]
     #[argh(description = "specify the path to store tips, default is $HOME/.laravel")]
     path: Option<String>,
+
+    #[argh(option, short = 'o')]
+    #[argh(
+        description = "specify the output format, default is display in terminal, support [text]"
+    )]
+    output: Option<OutputFormat>,
+
+    #[argh(switch, short = 'q')]
+    #[argh(description = "quiet mode, only output the result")]
+    quiet: bool,
 }
 
 #[derive(FromArgs, Debug)]
 #[argh(subcommand)]
 enum SubCommands {
-    Random(RandomCommand),
-    Sync(SyncCommand),
-    Search(SearchCommand),
+    Random(command::RandomCommand),
+    Sync(command::SyncCommand),
+    Search(command::SearchCommand),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum SearchEngine {
     SQLite,
     File,
@@ -56,26 +67,19 @@ impl argh::FromArgValue for SearchEngine {
     }
 }
 
-#[derive(FromArgs, Debug)]
-#[argh(subcommand, name = "random")]
-#[argh(description = "random laravel tips")]
-struct RandomCommand {}
+#[derive(Debug, PartialEq, Clone)]
+pub enum OutputFormat {
+    Text,
+    Terminal,
+}
 
-#[derive(FromArgs, Debug)]
-#[argh(subcommand, name = "sync")]
-#[argh(description = "sync laravel tips from laravel docs")]
-struct SyncCommand {}
-
-#[derive(FromArgs, Debug)]
-#[argh(subcommand, name = "search")]
-#[argh(description = "search laravel tips by keyword")]
-struct SearchCommand {
-    #[argh(positional)]
-    keyword: String,
-
-    #[argh(option, short = 'g')]
-    #[argh(description = "specify the group to search, such as 'eloquent', 'artisan', 'arr'")]
-    group: Option<String>,
+impl argh::FromArgValue for OutputFormat {
+    fn from_arg_value(value: &str) -> Result<Self, String> {
+        match value {
+            "text" | "t" => Ok(Self::Text),
+            _ => Ok(Self::Terminal),
+        }
+    }
 }
 
 #[tokio::main]
@@ -92,59 +96,10 @@ async fn main() {
         std::process::exit(0);
     }
 
-    let command = args.nested.unwrap_or_else(|| {
+    if let Err(err) = command::Manager::new(args).execute().await {
+        error!(format!("encountered an error: {}", err));
+
         std::process::exit(1);
-    });
-
-    let storage = storage::new_storage(args.engin, args.path);
-
-    match command {
-        SubCommands::Random(_) => match storage.random().await {
-            Ok(Some(e)) => {
-                if let Err(err) = utils::pretty_tip(e) {
-                    error!(format!("encountered an error: {}", err));
-                }
-            }
-            Ok(None) => {
-                error!("can not load tips from disk, please run [sync] first");
-            }
-            Err(e) => {
-                error!(format!("we got an error: {}", e));
-            }
-        },
-        SubCommands::Search(command) => match storage
-            .search(&command.keyword, command.group.as_deref())
-            .await
-        {
-            Ok(entities) => {
-                if entities.is_empty() {
-                    log!("no tips found");
-                } else if let Err(err) = utils::pretty_tips(entities) {
-                    error!(format!("encountered an error: {}", err));
-                }
-            }
-            Err(e) => {
-                error!(format!("encountered an error: {}", e));
-            }
-        },
-        Sync(_) => {
-            log!("Start sync all laravel tips from LaravelDaily/laravel-tips");
-
-            let entities = match github::parse_all_laravel_tips().await {
-                Ok(entities) => entities,
-                Err(err) => {
-                    error!(format!("encountered an error: {}", err));
-                    std::process::exit(1);
-                }
-            };
-
-            if let Err(err) = storage.store(entities).await {
-                error!(format!("encountered an error: {}", err));
-                std::process::exit(1);
-            }
-
-            success!("Sync all laravel tips from successfully, run [random] to get a lucky tip");
-        }
     }
 }
 
@@ -155,7 +110,8 @@ Options:
   -v, --version     show version
   -e, --engin       specify the search engine, default is SQLite, support
                     [sqlite, file]
-  --path            specify the path to store tips, default is $HOME/.laravel
+  -q, --quiet       do not output any message
+  -p, --path        specify the path to store tips, default is $HOME/.laravel
   --help            display usage information
 
 Commands:

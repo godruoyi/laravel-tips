@@ -26,13 +26,16 @@ file, then we use [termimad](https://github.com/Canop/termimad) to display the t
 ## Basic Usage
 
 ```
+Usage: laraveltips [-v] [-e <engin>] [--path <path>] [-o <output>] [-q] [<command>] [<args>]
+
 A command line tool for laravel tips
 
 Options:
   -v, --version     show version
-  -e, --engin       specify the search engine, default is SQLite, support
-                    [sqlite, file]
   --path            specify the path to store tips, default is $HOME/.laravel
+  -e, --engin       specify the search engine, default is SQLite, support [sqlite, file]
+  -o, --output      specify the output format, default is display in terminal, support [text]
+  -q, --quiet       quiet mode, only output the result
   --help            display usage information
 
 Commands:

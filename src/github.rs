@@ -32,8 +32,10 @@ impl Tree {
     }
 
     /// Get the file content, note that the content is base64 encoded
-    pub async fn get_content(&self) -> anyhow::Result<String> {
-        log!(format!(" parsing file: {}", &self.path));
+    pub async fn get_content(&self, quiet: bool) -> anyhow::Result<String> {
+        if !quiet {
+            log!(format!(" parsing file: {}", &self.path));
+        }
 
         #[derive(Deserialize)]
         struct Content {
@@ -46,7 +48,7 @@ impl Tree {
     }
 }
 
-pub async fn parse_all_laravel_tips() -> anyhow::Result<Vec<Entity>> {
+pub async fn parse_all_laravel_tips(quiet: bool) -> anyhow::Result<Vec<Entity>> {
     // 1. get all tips file from the laravel-tips repository
     let trees: Vec<Tree> = get_laravel_tips_trees().await?;
     let mut entities: Vec<Entity> = Vec::new();
@@ -55,7 +57,7 @@ pub async fn parse_all_laravel_tips() -> anyhow::Result<Vec<Entity>> {
     let tasks: Vec<_> = trees
         .iter()
         .filter(|tree| !tree.is_readme())
-        .map(|t| t.get_content())
+        .map(|t| t.get_content(quiet))
         .collect();
 
     // 3. wait for all tasks to complete

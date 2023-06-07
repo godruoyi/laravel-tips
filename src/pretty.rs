@@ -23,6 +23,7 @@ impl Pretty {
         match self.format {
             OutputFormat::Text => Box::new(TextPrinter {}),
             OutputFormat::Terminal => Box::new(TerminalPrinter {}),
+            OutputFormat::Json => Box::new(JsonPrinter {}),
         }
     }
 
@@ -45,11 +46,21 @@ struct TextPrinter {}
 
 struct TerminalPrinter {}
 
+struct JsonPrinter {}
+
 impl Printable for TextPrinter {
     fn print(&self, tips: Vec<Entity>) -> anyhow::Result<()> {
         for tip in tips {
             println!("### {}\n{}\n", tip.title, tip.content);
         }
+
+        Ok(())
+    }
+}
+
+impl Printable for JsonPrinter {
+    fn print(&self, tips: Vec<Entity>) -> anyhow::Result<()> {
+        println!("{}", serde_json::to_string(&tips)?);
 
         Ok(())
     }

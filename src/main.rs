@@ -31,7 +31,7 @@ pub struct Args {
 
     #[argh(option, short = 'o')]
     #[argh(
-        description = "specify the output format, default is display in terminal, support [text]"
+        description = "specify the output format, default is display in terminal, support [text, json]"
     )]
     output: Option<OutputFormat>,
 
@@ -71,12 +71,14 @@ impl argh::FromArgValue for SearchEngine {
 pub enum OutputFormat {
     Text,
     Terminal,
+    Json,
 }
 
 impl argh::FromArgValue for OutputFormat {
     fn from_arg_value(value: &str) -> Result<Self, String> {
         match value {
             "text" | "t" => Ok(Self::Text),
+            "json" | "j" => Ok(Self::Json),
             _ => Ok(Self::Terminal),
         }
     }
@@ -108,10 +110,10 @@ A command line tool for laravel tips
 
 Options:
   -v, --version     show version
-  -e, --engin       specify the search engine, default is SQLite, support
-                    [sqlite, file]
-  -q, --quiet       do not output any message
-  -p, --path        specify the path to store tips, default is $HOME/.laravel
+  --path            specify the path to store tips, default is $HOME/.laravel
+  -e, --engin       specify the search engine, default is SQLite, support [sqlite, file]
+  -o, --output      specify the output format, default is display in terminal, support [text, json]
+  -q, --quiet       quiet mode, only output the result
   --help            display usage information
 
 Commands:

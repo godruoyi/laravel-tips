@@ -34,7 +34,7 @@ Options:
   -v, --version     show version
   --path            specify the path to store tips, default is $HOME/.laravel
   -e, --engin       specify the search engine, default is SQLite, support [sqlite, file]
-  -o, --output      specify the output format, default is display in terminal, support [text]
+  -o, --output      specify the output format, default is display in terminal, support [text, json]
   -q, --quiet       quiet mode, only output the result
   --help            display usage information
 

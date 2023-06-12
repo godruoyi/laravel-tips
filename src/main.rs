@@ -25,7 +25,7 @@ pub struct Args {
     #[argh(description = "specify the search engine, default is SQLite, support [sqlite, file]")]
     engin: Option<SearchEngine>,
 
-    #[argh(option, long = "path")]
+    #[argh(option, long = "path", short = 'p')]
     #[argh(description = "specify the path to store tips, default is $HOME/.laravel")]
     path: Option<String>,
 
@@ -99,7 +99,7 @@ async fn main() {
     }
 
     if let Err(err) = command::Manager::new(args).execute().await {
-        error!(format!("encountered an error: {}", err));
+        error!(format!("{}", err));
 
         std::process::exit(1);
     }

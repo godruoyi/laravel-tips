@@ -118,31 +118,16 @@ async fn http_get<T: DeserializeOwned>(url: &str) -> anyhow::Result<T> {
         .default_headers(headers)
         .build()?;
 
-    let res = client.get(url).send().await?.json::<T>().await?;
+    let response = client.get(url).send().await?;
+    if !response.status().is_success() {
+        return Err(anyhow::anyhow!(
+            "{}, error: {}",
+            response.status(),
+            response.text().await?
+        ));
+    }
+
+    let res = response.json::<T>().await?;
 
     Ok(res)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::utils::base64_decode;
-    use serde_json::Value;
-    use std::collections;
-
-    #[tokio::test]
-    async fn test_base64_decode_from_github_api() {
-        let resp = http_get::<collections::HashMap<String, Value>>("https://api.github.com/repos/LaravelDaily/laravel-tips/git/blobs/5b7d0d2cc4f6865b8492e47ed6eb3d0beecd4482").await;
-
-        let encode_content = resp
-            .unwrap()
-            .get("content")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .to_string();
-
-        let x = base64_decode(encode_content);
-        assert!(x.is_ok());
-    }
 }

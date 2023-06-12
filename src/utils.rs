@@ -24,7 +24,7 @@ pub fn parse_tips(c: String) -> anyhow::Result<Vec<Tip>> {
 fn process_line(mut state: (Option<Tip>, Vec<Tip>), line: &str) -> (Option<Tip>, Vec<Tip>) {
     match state.0.take() {
         Some(mut entity) => {
-            if line.starts_with("###") {
+            if line.starts_with("### ") {
                 state.1.push(entity);
                 let title = line.trim_start_matches("###").trim().to_string();
                 state.0 = Some(Tip {

@@ -12,7 +12,7 @@ macro_rules! success {
 macro_rules! error {
     ($msg:expr) => {{
         use console::{style, Emoji};
-        println!("{} {}", style(Emoji("🦧", "x")).red(), style($msg).yellow());
+        eprintln!("{} {}", style(Emoji("🦧", "x")).red(), style($msg).yellow());
     }};
 }
 

@@ -34,8 +34,11 @@ git clone https://github.com/godruoyi/laravel-tips.git
 cd laravel-tips
 cargo build --release
 
-# try it
-./target/release/laraveltips random
+# try it, -__- should sync first
+./target/release/laraveltips sync
+
+# ./target/release/laraveltips random
+# ./target/release/laraveltips search api
 
 # or move it to your bin path
 cp ./target/release/laraveltips /usr/local/bin/laraveltips

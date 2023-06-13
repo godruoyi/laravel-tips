@@ -23,6 +23,25 @@ file, then we use [termimad](https://github.com/Canop/termimad) to display the t
 - [ ] Use SQLite FT5 support full-text search
 - [ ] Support PostgreSQL engin and vector search?
 
+## Installation
+
+We have not released the binary file yet(coming soon), you need to build it from source code now.
+
+> You need to install [Rust](https://www.rust-lang.org/) first.
+
+```shell
+git clone https://github.com/godruoyi/laravel-tips.git
+cd laravel-tips
+cargo build --release
+
+# try it
+./target/release/laraveltips random
+
+# or move it to your bin path
+cp ./target/release/laraveltips /usr/local/bin/laraveltips
+laraveltips random
+```
+
 ## Basic Usage
 
 ```
@@ -47,3 +66,8 @@ Commands:
 ## ScreenShot
 
 ![laravel-tips](https://user-images.githubusercontent.com/16079222/242636067-803c1c9c-1dfe-4f18-abaf-2921a734888d.gif)
+
+## License
+
+MIT License
+

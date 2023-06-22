@@ -25,6 +25,17 @@ file, then we use [termimad](https://github.com/Canop/termimad) to display the t
 
 ## Installation
 
+## Raycast Extension
+
+We support Raycast Extension now 🎉🎉🎉
+<a title="Install laravel-tips Raycast Extension" href="https://www.raycast.com/Godruoyi/laravel-tips">
+<img src="https://www.raycast.com/Godruoyi/laravel-tips/install_button@2x.png" height="64" alt="" style="height: 64px;">
+</a>
+
+![laravel-tips-raycast](https://github.com/godruoyi/laravel-tips-raycast/blob/main/metadata/0.png)
+
+### Source code
+
 We have not released the binary file yet(coming soon), you need to build it from source code now.
 
 > You need to install [Rust](https://www.rust-lang.org/) first.

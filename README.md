@@ -23,18 +23,17 @@ file, then we use [termimad](https://github.com/Canop/termimad) to display the t
 - [ ] Use SQLite FT5 support full-text search
 - [ ] Support PostgreSQL engin and vector search?
 
-## Installation
+## Installation with Raycast
 
-## Raycast Extension
-
-We support Raycast Extension now 🎉🎉🎉
 <a title="Install laravel-tips Raycast Extension" href="https://www.raycast.com/Godruoyi/laravel-tips">
 <img src="https://www.raycast.com/Godruoyi/laravel-tips/install_button@2x.png" height="64" alt="" style="height: 64px;">
 </a>
 
+We support Raycast Extension now 🎉🎉🎉
+
 ![laravel-tips-raycast](https://github.com/godruoyi/laravel-tips-raycast/blob/main/metadata/0.png)
 
-### Source code
+## Installation with source code
 
 We have not released the binary file yet(coming soon), you need to build it from source code now.
 
